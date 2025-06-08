@@ -2,48 +2,49 @@ name: .NET CI
 
 on:
   push:
-    branches: [ "main", "master" ] 
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master" ] 
+    branches: [ "main", "master" ]
 
 env:
-  BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output' 
-  TEST_PROJECT_PATH: 'Rezervari.Tests\Rezervari.Tests.csproj' 
+  BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output'
+  TEST_PROJECT_PATH: 'Rezervari.Tests\Rezervari.Tests.csproj'
 
 jobs:
   build-and-test:
-    runs-on: windows-latest 
+    runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4 
+    - uses: actions/checkout@v4
       with:
-        fetch-depth: 0 
+        fetch-depth: 0
 
-    - name: Setup MSBuild & NuGet 
-      uses: microsoft/setup-msbuild@v2 
+    - name: Setup MSBuild & NuGet
+      uses: microsoft/setup-msbuild@v2
       with:
-        vs-version: 'latest' 
+        vs-version: 'latest'
 
-    - name: Setup NuGet 
-      uses: NuGet/setup-nuget@v1 
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1
 
-    - name: Restore NuGet packages 
-      run: nuget restore Rezervari.sln 
+    - name: Restore NuGet packages
+      run: nuget restore Rezervari.sln
 
-    - name: Build Solution and Publish 
+    - name: Build Solution and Publish
       run: |
         msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU" /p:OutputPath="${{ env.BUILD_OUTPUT_PATH }}"
 
-    - name: Run Tests 
+    - name: Run Tests
+      run: dotnet test "${{ env.TEST_PROJECT_PATH }}" --configuration Release --logger "trx;LogFileName=test_results.trx"
 
-    - name: Upload Test Results 
+    - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() 
+      if: always()
       with:
         name: TestResults
-        path: '**\test_results.trx' 
+        path: '**\test_results.trx'
 
-    - name: Create Deployment Artifact 
+    - name: Create Deployment Artifact
       uses: actions/upload-artifact@v4
       with:
         name: RezervariApp
