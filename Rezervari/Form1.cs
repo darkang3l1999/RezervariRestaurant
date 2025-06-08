@@ -8,14 +8,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Rezervari.Data; // Importă namespace-ul pentru Repository
+using Rezervari.BusinessLogic; // Importă namespace-ul pentru strategiile de sortare
 
 namespace Rezervari
 {
     public partial class Form1 : Form
     {
-        // Declaram o variabila de tipul interfetei IRezervareRepository.
-        // Acum Form1 nu va mai sti detaliile de implementare ale stocarii.
         private IRezervareRepository _rezervareRepository;
+        // Adăugăm o referință la strategia de sortare curentă.
+        private IRezervareSortStrategy _currentSortStrategy;
+        // O listă cu toate strategiile de sortare disponibile.
+        private List<IRezervareSortStrategy> _sortStrategies;
 
         /// <summary>
         /// Constructorul principal al formei.
@@ -23,33 +26,47 @@ namespace Rezervari
         /// </summary>
         public Form1()
         {
-            InitializeComponent(); // Inițializează controalele generate de designer
+            InitializeComponent();
 
-            // Instanțiem implementarea in-memory a repository-ului.
-            // În aplicații mai complexe, am folosi Inversion of Control/Dependency Injection aici.
             _rezervareRepository = new InMemoryRezervareRepository();
 
-            // Setează DataGridView-urile să genereze automat coloane bazat pe proprietățile clasei Rezervare.
+            // Inițializează strategiile de sortare disponibile.
+            _sortStrategies = new List<IRezervareSortStrategy>
+            {
+                new SortByDateAscendingStrategy(),
+                new SortByDateDescendingStrategy(),
+                new SortByNameStrategy()
+            };
+
+            // Populează ComboBox-ul cu numele strategiilor de sortare.
+            // Fiecare element din ComboBox va fi obiectul strategiei, iar Text-ul afișat va fi proprietatea Name.
+            comboBoxSortStrategy.DisplayMember = "Name"; // Afișează proprietatea Name a obiectului strategiei
+            comboBoxSortStrategy.ValueMember = null; // Nu avem o valoare specifică, vom folosi obiectul întreg
+            comboBoxSortStrategy.DataSource = _sortStrategies;
+
+            // Setează strategia de sortare implicită (ex: Data Crescător).
+            _currentSortStrategy = _sortStrategies.FirstOrDefault(); // Setează prima strategie ca implicită
+            if (_currentSortStrategy != null)
+            {
+                comboBoxSortStrategy.SelectedItem = _currentSortStrategy; // Selectează elementul în ComboBox
+            }
+
+
             dataGridViewRezervari.AutoGenerateColumns = true;
             dataGridViewAnaliza.AutoGenerateColumns = true;
 
-            // Inițializează DataPicker-ul de filtrare la data curentă.
             dateTimePickerFiltruData.Value = DateTime.Today;
 
-            // Încarcă inițial rezervările folosind repository-ul.
             IncarcaRezervariInDataGridView();
         }
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Adaugă Rezervare".
-        /// Colectează datele introduse de utilizator, efectuează validări simple
-        /// și adaugă o nouă rezervare la lista internă folosind repository-ul.
         /// </summary>
         private void btnAdaugaRezervare_Click(object sender, EventArgs e)
         {
             try
             {
-                // Validare minimă a câmpurilor esențiale pentru o rezervare.
                 if (string.IsNullOrWhiteSpace(txtNumeClient.Text) ||
                     string.IsNullOrWhiteSpace(txtPrenumeClient.Text) ||
                     numUpDownNrPersoane.Value <= 0)
@@ -58,7 +75,6 @@ namespace Rezervari
                     return;
                 }
 
-                // Creează o nouă instanță de Rezervare cu datele introduse în controalele UI.
                 Rezervare nouaRezervare = new Rezervare(
                     txtNumeClient.Text,
                     txtPrenumeClient.Text,
@@ -68,90 +84,77 @@ namespace Rezervari
                     txtObservatii.Text
                 );
 
-                // Adaugă noua rezervare folosind repository-ul.
                 _rezervareRepository.AddRezervare(nouaRezervare);
-
-                // Reîmprospătează conținutul ambelor DataGridView-uri pentru a reflecta modificarea.
                 IncarcaRezervariInDataGridView();
-
-                // Curăță câmpurile de input pentru a pregăti pentru o nouă adăugare.
                 GolesteCampuri();
-
                 MessageBox.Show("Rezervare adăugată cu succes!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                // Afișează un mesaj de eroare prietenos în cazul unei excepții neașteptate.
                 MessageBox.Show($"A apărut o eroare la adăugarea rezervării: {ex.Message}", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Șterge Rezervare".
-        /// Șterge rezervarea selectată din DataGridView-ul principal folosind repository-ul.
         /// </summary>
         private void btnStergeRezervare_Click(object sender, EventArgs e)
         {
-            // Verifică dacă există cel puțin un rând selectat în DataGridView.
             if (dataGridViewRezervari.SelectedRows.Count > 0)
             {
-                // Solicită confirmare utilizatorului înainte de a șterge definitiv o rezervare.
                 var confirmResult = MessageBox.Show("Ești sigur că vrei să ștergi această rezervare?", "Confirmare Ștergere", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (confirmResult == DialogResult.Yes)
                 {
-                    // Obține obiectul Rezervare care este legat de rândul selectat în DataGridView.
                     Rezervare rezervareDeSters = dataGridViewRezervari.SelectedRows[0].DataBoundItem as Rezervare;
 
                     if (rezervareDeSters != null)
                     {
-                        // Elimină rezervarea folosind repository-ul.
                         _rezervareRepository.DeleteRezervare(rezervareDeSters);
-
-                        // Reîmprospătează ambele DataGridView-uri.
                         IncarcaRezervariInDataGridView();
-
                         MessageBox.Show("Rezervare ștearsă cu succes!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             }
             else
             {
-                // Anunță utilizatorul dacă nu a fost selectată nicio rezervare pentru ștergere.
                 MessageBox.Show("Selectează o rezervare pentru a o șterge.", "Avertisment", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
         /// <summary>
         /// Reîmprospătează datele afișate în ambele DataGridView-uri.
-        /// Acum preia datele din repository.
+        /// Acum preia datele din repository și aplică strategia de sortare și filtrarea de dată.
         /// </summary>
         private void IncarcaRezervariInDataGridView()
         {
-            // Preluăm toate rezervările de la repository.
             List<Rezervare> toateRezervarile = _rezervareRepository.GetAllRezervari();
 
-            // Reîmprospătează DataGridView-ul pentru Gestionare Rezervări
+            // Reîmprospătează DataGridView-ul pentru Gestionare Rezervări (întotdeauna nesortat/nefiltrat aici)
             dataGridViewRezervari.DataSource = null;
-            dataGridViewRezervari.DataSource = toateRezervarile.ToList(); // Folosim ToList() pentru a asigura o copie legată la UI
+            dataGridViewRezervari.DataSource = toateRezervarile.ToList();
 
-            // Logica de filtrare pentru Panoul de Analiză
-            List<Rezervare> rezervariFiltrate = new List<Rezervare>(toateRezervarile); // Creează o copie a listei complete
+            // Logica de filtrare și sortare pentru Panoul de Analiză
+            List<Rezervare> rezervariPentruAnaliza = new List<Rezervare>(toateRezervarile);
 
-            DateTime dataSelectata = dateTimePickerFiltruData.Value.Date; // Doar data, fără ora
-
-            // Filtrează rezervările care se potrivesc cu data selectată
-            rezervariFiltrate = rezervariFiltrate
+            // Pasul 1: Aplică filtrarea după dată
+            DateTime dataSelectata = dateTimePickerFiltruData.Value.Date;
+            rezervariPentruAnaliza = rezervariPentruAnaliza
                 .Where(r => r.DataOra.Date == dataSelectata)
                 .ToList();
 
-            // Reîmprospătează DataGridView-ul pentru Panoul de Analiză cu rezervările filtrate
+            // Pasul 2: Aplică strategia de sortare selectată, dacă există.
+            if (_currentSortStrategy != null)
+            {
+                rezervariPentruAnaliza = _currentSortStrategy.Sort(rezervariPentruAnaliza);
+            }
+
+            // Reîmprospătează DataGridView-ul pentru Panoul de Analiză
             dataGridViewAnaliza.DataSource = null;
-            dataGridViewAnaliza.DataSource = rezervariFiltrate;
+            dataGridViewAnaliza.DataSource = rezervariPentruAnaliza;
         }
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Aplică Filtru" din Panoul de Analiză.
-        /// Reîncarcă rezervările în DataGridView-ul de analiză, aplicând filtrul de dată.
         /// </summary>
         private void btnAplicaFiltru_Click(object sender, EventArgs e)
         {
@@ -160,12 +163,31 @@ namespace Rezervari
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Anulează Filtru" din Panoul de Analiză.
-        /// Resetează DataPicker-ul la data curentă și reîncarcă toate rezervările.
         /// </summary>
         private void btnClearFiltru_Click(object sender, EventArgs e)
         {
             dateTimePickerFiltruData.Value = DateTime.Today; // Resetează la data curentă
+            // Resetează și strategia de sortare la cea implicită (prima din listă).
+            _currentSortStrategy = _sortStrategies.FirstOrDefault();
+            if (_currentSortStrategy != null)
+            {
+                comboBoxSortStrategy.SelectedItem = _currentSortStrategy;
+            }
             IncarcaRezervariInDataGridView(); // Va reîncărca rezervările pentru data curentă
+        }
+
+        /// <summary>
+        /// Gestionează evenimentul de selecție modificată în ComboBox-ul de sortare.
+        /// Setează noua strategie de sortare și reîncarcă DataGridView-ul.
+        /// </summary>
+        private void comboBoxSortStrategy_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Când utilizatorul schimbă selecția, actualizăm strategia curentă.
+            if (comboBoxSortStrategy.SelectedItem is IRezervareSortStrategy selectedStrategy)
+            {
+                _currentSortStrategy = selectedStrategy;
+                IncarcaRezervariInDataGridView(); // Reîncarcă pentru a aplica noua sortare
+            }
         }
 
         /// <summary>
@@ -180,5 +202,7 @@ namespace Rezervari
             numUpDownNrPersoane.Value = 1;
             txtObservatii.Clear();
         }
+
+    
     }
 }

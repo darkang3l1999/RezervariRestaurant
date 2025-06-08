@@ -54,9 +54,13 @@
     </Compile>
     <Compile Include="InMemoryRezervareRepository.cs" />
     <Compile Include="IRezervareRepository.cs" />
+    <Compile Include="IRezervareSortStrategy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rezervare.cs" />
+    <Compile Include="SortByDateAscendingStrategy.cs" />
+    <Compile Include="SortByDateDescendingStrategy.cs" />
+    <Compile Include="SortByNameStrategy.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

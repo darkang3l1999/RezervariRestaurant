@@ -45,18 +45,20 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.dataGridViewAnaliza = new System.Windows.Forms.DataGridView();
-            this.Filtrare = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.dateTimePickerFiltruData = new System.Windows.Forms.DateTimePicker();
-            this.btnAplicaFiltru = new System.Windows.Forms.Button();
             this.btnClearFiltru = new System.Windows.Forms.Button();
+            this.btnAplicaFiltru = new System.Windows.Forms.Button();
+            this.dateTimePickerFiltruData = new System.Windows.Forms.DateTimePicker();
+            this.Filtrare = new System.Windows.Forms.Label();
+            this.dataGridViewAnaliza = new System.Windows.Forms.DataGridView();
+            this.label7 = new System.Windows.Forms.Label();
+            this.comboBoxSortStrategy = new System.Windows.Forms.ComboBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewRezervari)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numUpDownNrPersoane)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewAnaliza)).BeginInit();
             this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewAnaliza)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -230,25 +232,10 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "Nume Client:";
             // 
-            // dataGridViewAnaliza
-            // 
-            this.dataGridViewAnaliza.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewAnaliza.Location = new System.Drawing.Point(44, 73);
-            this.dataGridViewAnaliza.Name = "dataGridViewAnaliza";
-            this.dataGridViewAnaliza.Size = new System.Drawing.Size(693, 324);
-            this.dataGridViewAnaliza.TabIndex = 0;
-            // 
-            // Filtrare
-            // 
-            this.Filtrare.AutoSize = true;
-            this.Filtrare.Location = new System.Drawing.Point(68, 35);
-            this.Filtrare.Name = "Filtrare";
-            this.Filtrare.Size = new System.Drawing.Size(89, 13);
-            this.Filtrare.TabIndex = 1;
-            this.Filtrare.Text = "Filtrare dupa data";
-            // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.comboBoxSortStrategy);
+            this.tabPage2.Controls.Add(this.label7);
             this.tabPage2.Controls.Add(this.btnClearFiltru);
             this.tabPage2.Controls.Add(this.btnAplicaFiltru);
             this.tabPage2.Controls.Add(this.dateTimePickerFiltruData);
@@ -262,16 +249,19 @@
             this.tabPage2.Text = "Panou de Analiza";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // dateTimePickerFiltruData
+            // btnClearFiltru
             // 
-            this.dateTimePickerFiltruData.Location = new System.Drawing.Point(186, 29);
-            this.dateTimePickerFiltruData.Name = "dateTimePickerFiltruData";
-            this.dateTimePickerFiltruData.Size = new System.Drawing.Size(200, 20);
-            this.dateTimePickerFiltruData.TabIndex = 2;
+            this.btnClearFiltru.Location = new System.Drawing.Point(451, 12);
+            this.btnClearFiltru.Name = "btnClearFiltru";
+            this.btnClearFiltru.Size = new System.Drawing.Size(75, 23);
+            this.btnClearFiltru.TabIndex = 4;
+            this.btnClearFiltru.Text = "Clear";
+            this.btnClearFiltru.UseVisualStyleBackColor = true;
+            this.btnClearFiltru.Click += new System.EventHandler(this.btnClearFiltru_Click);
             // 
             // btnAplicaFiltru
             // 
-            this.btnAplicaFiltru.Location = new System.Drawing.Point(435, 29);
+            this.btnAplicaFiltru.Location = new System.Drawing.Point(370, 12);
             this.btnAplicaFiltru.Name = "btnAplicaFiltru";
             this.btnAplicaFiltru.Size = new System.Drawing.Size(75, 23);
             this.btnAplicaFiltru.TabIndex = 3;
@@ -279,15 +269,48 @@
             this.btnAplicaFiltru.UseVisualStyleBackColor = true;
             this.btnAplicaFiltru.Click += new System.EventHandler(this.btnAplicaFiltru_Click);
             // 
-            // btnClearFiltru
+            // dateTimePickerFiltruData
             // 
-            this.btnClearFiltru.Location = new System.Drawing.Point(552, 29);
-            this.btnClearFiltru.Name = "btnClearFiltru";
-            this.btnClearFiltru.Size = new System.Drawing.Size(75, 23);
-            this.btnClearFiltru.TabIndex = 4;
-            this.btnClearFiltru.Text = "Clear";
-            this.btnClearFiltru.UseVisualStyleBackColor = true;
-            this.btnClearFiltru.Click += new System.EventHandler(this.btnClearFiltru_Click);
+            this.dateTimePickerFiltruData.Location = new System.Drawing.Point(164, 15);
+            this.dateTimePickerFiltruData.Name = "dateTimePickerFiltruData";
+            this.dateTimePickerFiltruData.Size = new System.Drawing.Size(200, 20);
+            this.dateTimePickerFiltruData.TabIndex = 2;
+            // 
+            // Filtrare
+            // 
+            this.Filtrare.AutoSize = true;
+            this.Filtrare.Location = new System.Drawing.Point(69, 17);
+            this.Filtrare.Name = "Filtrare";
+            this.Filtrare.Size = new System.Drawing.Size(89, 13);
+            this.Filtrare.TabIndex = 1;
+            this.Filtrare.Text = "Filtrare dupa data";
+            // 
+            // dataGridViewAnaliza
+            // 
+            this.dataGridViewAnaliza.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewAnaliza.Location = new System.Drawing.Point(44, 73);
+            this.dataGridViewAnaliza.Name = "dataGridViewAnaliza";
+            this.dataGridViewAnaliza.Size = new System.Drawing.Size(693, 324);
+            this.dataGridViewAnaliza.TabIndex = 0;
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(87, 47);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(71, 13);
+            this.label7.TabIndex = 5;
+            this.label7.Text = "Sortare dupa:";
+            // 
+            // comboBoxSortStrategy
+            // 
+            this.comboBoxSortStrategy.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxSortStrategy.FormattingEnabled = true;
+            this.comboBoxSortStrategy.Location = new System.Drawing.Point(165, 47);
+            this.comboBoxSortStrategy.Name = "comboBoxSortStrategy";
+            this.comboBoxSortStrategy.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxSortStrategy.TabIndex = 6;
+            this.comboBoxSortStrategy.SelectedIndexChanged += new System.EventHandler(this.comboBoxSortStrategy_SelectedIndexChanged);
             // 
             // Form1
             // 
@@ -302,9 +325,9 @@
             this.tabPage1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewRezervari)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numUpDownNrPersoane)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewAnaliza)).EndInit();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewAnaliza)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -334,6 +357,8 @@
         private System.Windows.Forms.DateTimePicker dateTimePickerFiltruData;
         private System.Windows.Forms.Label Filtrare;
         private System.Windows.Forms.DataGridView dataGridViewAnaliza;
+        private System.Windows.Forms.ComboBox comboBoxSortStrategy;
+        private System.Windows.Forms.Label label7;
     }
 }
 
