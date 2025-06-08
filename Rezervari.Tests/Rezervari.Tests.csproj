@@ -49,6 +49,8 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InMemoryRezervareRepositoryTests.cs" />
+    <Compile Include="RezervareSortStrategyTests.cs" />
     <Compile Include="RezervareTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
