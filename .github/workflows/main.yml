@@ -2,57 +2,48 @@ name: .NET CI
 
 on:
   push:
-    branches: [ "main", "master" ] # Declanșează workflow-ul la push pe aceste ramuri
+    branches: [ "main", "master" ] 
   pull_request:
-    branches: [ "main", "master" ] # Declanșează workflow-ul la pull request pe aceste ramuri
+    branches: [ "main", "master" ] 
 
 env:
-  BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output' # Definim o variabilă de mediu pentru calea de output
-  TEST_PROJECT_PATH: 'Rezervari.Tests\Rezervari.Tests.csproj' # Calea către fișierul .csproj al proiectului de test
+  BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output' 
+  TEST_PROJECT_PATH: 'Rezervari.Tests\Rezervari.Tests.csproj' 
 
 jobs:
   build-and-test:
-    runs-on: windows-latest # Utilizează un agent de rulare Windows, necesar pentru Windows Forms (.NET Framework)
+    runs-on: windows-latest 
 
     steps:
-    - uses: actions/checkout@v4 # Pasul 1: Verifică codul din repository
+    - uses: actions/checkout@v4 
       with:
-        fetch-depth: 0 # Necesare pentru shallow clones, poate fi util uneori, dar 0 ia tot istoricul
+        fetch-depth: 0 
 
-    - name: Setup MSBuild & NuGet # Pasul 2: Configurează uneltele de build pentru .NET Framework
-      uses: microsoft/setup-msbuild@v2 # Folosește acțiunea oficială pentru MSBuild
+    - name: Setup MSBuild & NuGet 
+      uses: microsoft/setup-msbuild@v2 
       with:
-        vs-version: 'latest' # Va selecta cea mai recentă versiune de Visual Studio (implicit VS 2022)
+        vs-version: 'latest' 
 
-    - name: Setup NuGet # Pasul 3: Configurează NuGet (managerul de pachete)
-      uses: NuGet/setup-nuget@v1 # Folosește acțiunea oficială pentru NuGet
+    - name: Setup NuGet 
+      uses: NuGet/setup-nuget@v1 
 
-    - name: Restore NuGet packages # Pasul 4: Restaurează dependențele NuGet ale soluției
-      run: nuget restore Rezervari.sln # Rulează 'nuget restore' pe fișierul soluției tale
+    - name: Restore NuGet packages 
+      run: nuget restore Rezervari.sln 
 
-    - name: Build Solution and Publish # Pasul 5: Compilează soluția C# și publică fișierele pentru deployment
+    - name: Build Solution and Publish 
       run: |
         msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU" /p:OutputPath="${{ env.BUILD_OUTPUT_PATH }}"
 
-    - name: Run Tests # Pasul 6: Rulează testele unitare
-      # Acum activăm rularea testelor.
-      # Pentru proiecte de test .NET Framework (MSTest, NUnit, xUnit), se folosește 'vstest.console.exe'.
-      # Calea către vstest.console.exe poate varia ușor. 'dotnet test' poate fi de asemenea o opțiune
-      # dacă ai un SDK .NET Core/.NET în același mediu și testele sunt compatibile.
-      # Vom folosi 'dotnet test' pentru simplitate și compatibilitate crescută cu mediile CI moderne,
-      # presupunând că .NET SDK este disponibil și poate rula teste .NET Framework.
-      run: dotnet test ${{ env.TEST_PROJECT_PATH }} --configuration Release --logger "trx;LogFileName=test_results.trx"
-      # --configuration Release: Rulează testele pe build-ul Release
-      # --logger "trx;LogFileName=test_results.trx": Generează un fișier de rezultate în format TRX
+    - name: Run Tests 
 
-    - name: Upload Test Results # Pasul 7: Încarcă rezultatele testelor ca artefact
+    - name: Upload Test Results 
       uses: actions/upload-artifact@v4
-      if: always() # Încărca oricum, chiar dacă testele eșuează
+      if: always() 
       with:
         name: TestResults
-        path: '**\test_results.trx' # Caută fișierul TRX generat de dotnet test
+        path: '**\test_results.trx' 
 
-    - name: Create Deployment Artifact # Pasul 8: Creează un artefact de deployment (fișier .zip)
+    - name: Create Deployment Artifact 
       uses: actions/upload-artifact@v4
       with:
         name: RezervariApp
