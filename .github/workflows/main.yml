@@ -9,6 +9,9 @@ on:
   pull_request:
     branches: [ "main", "master" ] # Declanșează workflow-ul la pull request pe aceste ramuri
 
+env:
+  BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output' # Definim o variabilă de mediu pentru calea de output
+
 jobs:
   build-and-test:
     runs-on: windows-latest # Utilizează un agent de rulare Windows, necesar pentru Windows Forms (.NET Framework)
@@ -21,7 +24,7 @@ jobs:
     - name: Setup MSBuild & NuGet # Pasul 2: Configurează uneltele de build pentru .NET Framework
       uses: microsoft/setup-msbuild@v2 # Folosește acțiunea oficială pentru MSBuild
       with:
-        msbuild-version: latest # Va încerca să găsească cea mai recentă versiune de MSBuild disponibilă
+        vs-version: 'latest' # Va selecta cea mai recentă versiune de Visual Studio (implicit VS 2022)
 
     - name: Setup NuGet # Pasul 3: Configurează NuGet (managerul de pachete)
       uses: NuGet/setup-nuget@v1 # Folosește acțiunea oficială pentru NuGet
@@ -29,28 +32,21 @@ jobs:
     - name: Restore NuGet packages # Pasul 4: Restaurează dependențele NuGet ale soluției
       run: nuget restore Rezervari.sln # Rulează 'nuget restore' pe fișierul soluției tale
 
-    - name: Build Solution # Pasul 5: Compilează soluția C# în modul Release
-      # Utilizează msbuild.exe pentru a compila proiectul .NET Framework
-      run: msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU"
+    - name: Build Solution and Publish # Pasul 5: Compilează soluția C# și publică fișierele pentru deployment
+      # Vom folosi msbuild cu un parametru de output, asigurându-ne că toate DLL-urile sunt colectate.
+      # Reține că msbuild /t:Publish este mai mult pentru ClickOnce, dar /p:OutputPath este eficient.
+      run: |
+        msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU" /p:OutputPath="${{ env.BUILD_OUTPUT_PATH }}"
+        # Această comandă construiește proiectul și plasează toate fișierele compilate
+        # (inclusiv DLL-urile dependențelor) în directorul specificat de BUILD_OUTPUT_PATH.
 
-    - name: Run Tests # Pasul 6: Rulează testele unitare
-      # ATENȚIE: Acest pas va eșua dacă nu ai încă un proiect de test.
-      # Va trebui să creezi un proiect de test separat (de ex., Rezervari.Tests)
-      # și să adaugi teste unitare în el înainte ca acest pas să treacă.
-      # Momentan, vom comenta acest pas pentru a permite build-ului să treacă și să vedem artefactul.
-      # Când vei implementa testele, vom decomenta și vom ajusta calea.
+    - name: Run Tests # Pasul 6: Rulează testele unitare (rămâne comentat/sărit deocamdată)
       run: echo "Skipping tests for now. Will enable after unit tests are implemented."
-      # Dacă ai un proiect de test .NET Framework (xUnit, NUnit, MSTest),
-      # vei folosi ceva de genul (adaptează calea și numele proiectului de test):
-      # run: |
-      #   "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" Rezervari.Tests\bin\Release\Rezervari.Tests.dll /logger:trx
-      # Asigură-te că `Rezervari.Tests\bin\Release\Rezervari.Tests.dll` este calea corectă către fișierul DLL al testelor tale.
 
 
     - name: Create Deployment Artifact # Pasul 7: Creează un artefact de deployment (fișier .zip)
       uses: actions/upload-artifact@v4 # Acțiunea pentru a încărca artefacte
       with:
         name: RezervariApp # Numele artefactului care va fi creat (poate fi descărcat de pe GitHub)
-        path: Rezervari/bin/Release/ # Calea către fișierele compilate ale aplicației tale (executabilul și DLL-urile)
-        # IMPORTANT: Asigură-te că această cale este corectă și că fișierele există după pasul de build.
-        # Verifică directorul 'bin/Release' al proiectului tău 'Rezervari' după un build reușit local.
+        path: ${{ env.BUILD_OUTPUT_PATH }} # Acum folosim variabila de mediu care conține toate fișierele publicate
+        # IMPORTANT: Această cale ar trebui să conțină acum toate fișierele necesare pentru rularea aplicației.
