@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq; // Necesit pentru ToList() pentru a crea o copie a listei pentru DataGridView
+using System.Linq; // Necesit pentru ToList() și operații de filtrare/sortare
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -29,11 +29,14 @@ namespace Rezervari
             rezervari.Add(new Rezervare("Popescu", "Ion", "0722111222", new DateTime(2025, 6, 15, 18, 0, 0), 4, "Masa la fereastra"));
             rezervari.Add(new Rezervare("Ionescu", "Ana", "0744333444", new DateTime(2025, 6, 15, 20, 30, 0), 2));
             rezervari.Add(new Rezervare("Georgescu", "Dan", "0766555666", new DateTime(2025, 6, 16, 19, 0, 0), 3, "Cu scaun de bebelus"));
+            rezervari.Add(new Rezervare("Vasile", "Maria", "0755888999", new DateTime(2025, 6, 15, 21, 0, 0), 5)); // A doua rezervare pe 15.06
 
-            // Setează DataGridView-ul să genereze automat coloane bazat pe proprietățile clasei Rezervare.
-            // Acest lucru simplifică afișarea datelor din lista de Rezervare.
+            // Setează DataGridView-urile să genereze automat coloane bazat pe proprietățile clasei Rezervare.
             dataGridViewRezervari.AutoGenerateColumns = true;
-            dataGridViewAnaliza.AutoGenerateColumns = true; // Și pentru cel de analiză
+            dataGridViewAnaliza.AutoGenerateColumns = true;
+
+            // Inițializează DataPicker-ul de filtrare la data curentă.
+            dateTimePickerFiltruData.Value = DateTime.Today; // Setează la începutul zilei curente
 
             // Încarcă inițial rezervările în ambele DataGridView-uri la pornirea aplicației.
             IncarcaRezervariInDataGridView();
@@ -124,18 +127,48 @@ namespace Rezervari
         /// <summary>
         /// Reîmprospătează datele afișate în ambele DataGridView-uri (Gestionare Rezervări și Panou de Analiză).
         /// Această metodă este apelată după fiecare operație de adăugare sau ștergere.
+        /// Include logica de filtrare pentru Panoul de Analiză.
         /// </summary>
         private void IncarcaRezervariInDataGridView()
         {
-            // Pentru a forța reîmprospătarea DataGridView-ului, setăm DataSource la null și apoi la lista actualizată.
-            // Utilizăm ToList() pentru a crea o copie a listei, ceea ce ajută la data binding și previne anumite erori.
+            // Reîmprospătează DataGridView-ul pentru Gestionare Rezervări
             dataGridViewRezervari.DataSource = null;
             dataGridViewRezervari.DataSource = rezervari.ToList();
 
-            // Momentan, populăm și DataGridView-ul pentru analiză cu aceleași date.
-            // Ulterior, aici vom adăuga logică de filtrare/sortare specifică pentru analiza datelor.
+            // Logica de filtrare pentru Panoul de Analiză
+            List<Rezervare> rezervariFiltrate = new List<Rezervare>(rezervari); // Creează o copie a listei complete
+
+            // Verifică dacă checkbox-ul de filtrare este bifat (dacă vom adăuga unul)
+            // Momentan, filtram doar pe baza valorii din dateTimePickerFiltruData
+            DateTime dataSelectata = dateTimePickerFiltruData.Value.Date; // Doar data, fără ora
+
+            // Filtrează rezervările care se potrivesc cu data selectată
+            rezervariFiltrate = rezervariFiltrate
+                .Where(r => r.DataOra.Date == dataSelectata)
+                .ToList();
+
+            // Reîmprospătează DataGridView-ul pentru Panoul de Analiză cu rezervările filtrate
             dataGridViewAnaliza.DataSource = null;
-            dataGridViewAnaliza.DataSource = rezervari.ToList();
+            dataGridViewAnaliza.DataSource = rezervariFiltrate;
+        }
+
+        /// <summary>
+        /// Gestionează evenimentul de click pentru butonul "Aplică Filtru" din Panoul de Analiză.
+        /// Reîncarcă rezervările în DataGridView-ul de analiză, aplicând filtrul de dată.
+        /// </summary>
+        private void btnAplicaFiltru_Click(object sender, EventArgs e)
+        {
+            IncarcaRezervariInDataGridView(); // Metoda va aplica automat filtrul
+        }
+
+        /// <summary>
+        /// Gestionează evenimentul de click pentru butonul "Anulează Filtru" din Panoul de Analiză.
+        /// Resetează DataPicker-ul la data curentă și reîncarcă toate rezervările.
+        /// </summary>
+        private void btnClearFiltru_Click(object sender, EventArgs e)
+        {
+            dateTimePickerFiltruData.Value = DateTime.Today; // Resetează la data curentă
+            IncarcaRezervariInDataGridView(); // Va reîncărca toate rezervările (sau cele de azi, dacă e implicit)
         }
 
         /// <summary>
@@ -152,6 +185,6 @@ namespace Rezervari
             txtObservatii.Clear();
         }
 
-   
+
     }
 }
