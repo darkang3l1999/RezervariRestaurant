@@ -1,6 +1,3 @@
-# .github/workflows/dotnet-ci.yml
-# Acest fișier definește workflow-ul de Continuous Integration (CI) pentru proiectul tău C# Windows Forms.
-# Se va rula automat la fiecare push sau pull request pe ramurile 'main' sau 'master'.
 name: .NET CI
 
 on:
@@ -11,6 +8,7 @@ on:
 
 env:
   BUILD_OUTPUT_PATH: '${{ github.workspace }}\build_output' # Definim o variabilă de mediu pentru calea de output
+  TEST_PROJECT_PATH: 'Rezervari.Tests\Rezervari.Tests.csproj' # Calea către fișierul .csproj al proiectului de test
 
 jobs:
   build-and-test:
@@ -33,20 +31,29 @@ jobs:
       run: nuget restore Rezervari.sln # Rulează 'nuget restore' pe fișierul soluției tale
 
     - name: Build Solution and Publish # Pasul 5: Compilează soluția C# și publică fișierele pentru deployment
-      # Vom folosi msbuild cu un parametru de output, asigurându-ne că toate DLL-urile sunt colectate.
-      # Reține că msbuild /t:Publish este mai mult pentru ClickOnce, dar /p:OutputPath este eficient.
       run: |
         msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU" /p:OutputPath="${{ env.BUILD_OUTPUT_PATH }}"
-        # Această comandă construiește proiectul și plasează toate fișierele compilate
-        # (inclusiv DLL-urile dependențelor) în directorul specificat de BUILD_OUTPUT_PATH.
 
-    - name: Run Tests # Pasul 6: Rulează testele unitare (rămâne comentat/sărit deocamdată)
-      run: echo "Skipping tests for now. Will enable after unit tests are implemented."
+    - name: Run Tests # Pasul 6: Rulează testele unitare
+      # Acum activăm rularea testelor.
+      # Pentru proiecte de test .NET Framework (MSTest, NUnit, xUnit), se folosește 'vstest.console.exe'.
+      # Calea către vstest.console.exe poate varia ușor. 'dotnet test' poate fi de asemenea o opțiune
+      # dacă ai un SDK .NET Core/.NET în același mediu și testele sunt compatibile.
+      # Vom folosi 'dotnet test' pentru simplitate și compatibilitate crescută cu mediile CI moderne,
+      # presupunând că .NET SDK este disponibil și poate rula teste .NET Framework.
+      run: dotnet test ${{ env.TEST_PROJECT_PATH }} --configuration Release --logger "trx;LogFileName=test_results.trx"
+      # --configuration Release: Rulează testele pe build-ul Release
+      # --logger "trx;LogFileName=test_results.trx": Generează un fișier de rezultate în format TRX
 
-
-    - name: Create Deployment Artifact # Pasul 7: Creează un artefact de deployment (fișier .zip)
-      uses: actions/upload-artifact@v4 # Acțiunea pentru a încărca artefacte
+    - name: Upload Test Results # Pasul 7: Încarcă rezultatele testelor ca artefact
+      uses: actions/upload-artifact@v4
+      if: always() # Încărca oricum, chiar dacă testele eșuează
       with:
-        name: RezervariApp # Numele artefactului care va fi creat (poate fi descărcat de pe GitHub)
-        path: ${{ env.BUILD_OUTPUT_PATH }} # Acum folosim variabila de mediu care conține toate fișierele publicate
-        # IMPORTANT: Această cale ar trebui să conțină acum toate fișierele necesare pentru rularea aplicației.
+        name: TestResults
+        path: '**\test_results.trx' # Caută fișierul TRX generat de dotnet test
+
+    - name: Create Deployment Artifact # Pasul 8: Creează un artefact de deployment (fișier .zip)
+      uses: actions/upload-artifact@v4
+      with:
+        name: RezervariApp
+        path: ${{ env.BUILD_OUTPUT_PATH }}
