@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using System;
-using Rezervari; // Namespace-ul clasei Rezervare
-using Rezervari.Data; // Namespace-ul interfeței IRezervareRepository și implementării
+using Rezervari; 
+using Rezervari.Data; 
 
 namespace Rezervari.Tests
 {
@@ -11,26 +11,24 @@ namespace Rezervari.Tests
     public class InMemoryRezervareRepositoryTests
     {
         /// <summary>
-        /// Testează metoda GetAllRezervari pentru a se asigura că returnează toate rezervările
+        /// Testeaza metoda GetAllRezervari pentru a se asigura ca returneaza toate rezervarile
         /// incluse inițial în repository.
         /// </summary>
         [TestMethod]
         public void GetAllRezervari_ShouldReturnAllInitialReservations()
         {
-            // Arrange (Aranjare)
+  
             var repository = new InMemoryRezervareRepository();
-            int expectedInitialCount = 4; // Numărul de rezervări adăugate în constructorul InMemoryRezervareRepository
-
-            // Act (Acțiune)
+            int expectedInitialCount = 4; // Numarul de rezervari adaugate în constructorul InMemoryRezervareRepository
+        
             List<Rezervare> rezervari = repository.GetAllRezervari();
 
-            // Assert (Asertare)
-            Assert.IsNotNull(rezervari, "Lista de rezervări nu ar trebui să fie null.");
-            Assert.AreEqual(expectedInitialCount, rezervari.Count, $"Ar trebui să existe {expectedInitialCount} rezervări inițiale.");
+            Assert.IsNotNull(rezervari, "Lista de rezervari nu ar trebui sa fie null.");
+            Assert.AreEqual(expectedInitialCount, rezervari.Count, $"Ar trebui sa existe {expectedInitialCount} rezervari inițiale.");
         }
 
         /// <summary>
-        /// Testează metoda AddRezervare pentru a se asigura că o nouă rezervare este adăugată corect.
+        /// Testeaza metoda AddRezervare pentru a se asigura ca o noua rezervare este adaugata corect.
         /// </summary>
         [TestMethod]
         public void AddRezervare_ShouldAddNewReservation()
@@ -45,37 +43,34 @@ namespace Rezervari.Tests
             List<Rezervare> updatedRezervari = repository.GetAllRezervari();
 
             // Assert
-            Assert.AreEqual(initialCount + 1, updatedRezervari.Count, "Numărul de rezervări ar trebui să crească cu 1.");
-            Assert.IsTrue(updatedRezervari.Contains(newRezervare), "Noua rezervare ar trebui să fie în listă.");
+            Assert.AreEqual(initialCount + 1, updatedRezervari.Count, "Numarul de rezervari ar trebui sa creasca cu 1.");
+            Assert.IsTrue(updatedRezervari.Contains(newRezervare), "Noua rezervare ar trebui sa fie în lista.");
         }
 
         /// <summary>
-        /// Testează metoda DeleteRezervare pentru a se asigura că o rezervare existentă este ștearsă corect.
+        /// Testeaza metoda DeleteRezervare pentru a se asigura ca o rezervare existenta este ștearsa corect.
         /// </summary>
         [TestMethod]
         public void DeleteRezervare_ShouldRemoveExistingReservation()
         {
-            // Arrange
             var repository = new InMemoryRezervareRepository();
-            // Vom șterge una dintre rezervările inițiale (ex: "Popescu Ion")
+            // Vom sterge una dintre rezervari
             var rezervareToDelete = repository.GetAllRezervari()
                                              .FirstOrDefault(r => r.NumeClient == "Popescu" && r.PrenumeClient == "Ion");
 
-            Assert.IsNotNull(rezervareToDelete, "Rezervarea de șters ar trebui să existe inițial.");
+            Assert.IsNotNull(rezervareToDelete, "Rezervarea de sters ar trebui sa existe initial.");
             int initialCount = repository.GetAllRezervari().Count;
 
-            // Act
             repository.DeleteRezervare(rezervareToDelete);
             List<Rezervare> updatedRezervari = repository.GetAllRezervari();
 
-            // Assert
-            Assert.AreEqual(initialCount - 1, updatedRezervari.Count, "Numărul de rezervări ar trebui să scadă cu 1.");
-            Assert.IsFalse(updatedRezervari.Contains(rezervareToDelete), "Rezervarea ștearsă nu ar trebui să mai fie în listă.");
+            Assert.AreEqual(initialCount - 1, updatedRezervari.Count, "Numarul de rezervari ar trebui sa scada cu 1.");
+            Assert.IsFalse(updatedRezervari.Contains(rezervareToDelete), "Rezervarea stearsa nu ar trebui sa mai fie în lista.");
         }
 
         /// <summary>
-        /// Testează metoda DeleteRezervare când se încearcă ștergerea unei rezervări care nu există.
-        /// Numărul total de rezervări nu ar trebui să se schimbe.
+        /// Testeaza metoda DeleteRezervare cand se incearca stergerea unei rezervari care nu exista.
+        /// Numarul total de rezervari nu ar trebui sa se schimbe.
         /// </summary>
         [TestMethod]
         public void DeleteRezervare_ShouldNotChangeCount_WhenReservationDoesNotExist()
@@ -90,7 +85,7 @@ namespace Rezervari.Tests
             List<Rezervare> updatedRezervari = repository.GetAllRezervari();
 
             // Assert
-            Assert.AreEqual(initialCount, updatedRezervari.Count, "Numărul de rezervări nu ar trebui să se schimbe.");
+            Assert.AreEqual(initialCount, updatedRezervari.Count, "Numarul de rezervari nu ar trebui sa se schimbe.");
         }
     }
 }
