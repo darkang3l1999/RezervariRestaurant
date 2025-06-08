@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq; // Necesit pentru ToList() și operații de filtrare/sortare
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Rezervari.Data; // Importă namespace-ul pentru Repository
 
 namespace Rezervari
 {
     public partial class Form1 : Form
     {
-        // Lista internă care va stoca toate rezervările curente în memorie.
-        // Aceasta va servi ca sursă de date pentru DataGridView.
-        private List<Rezervare> rezervari;
+        // Declaram o variabila de tipul interfetei IRezervareRepository.
+        // Acum Form1 nu va mai sti detaliile de implementare ale stocarii.
+        private IRezervareRepository _rezervareRepository;
 
         /// <summary>
         /// Constructorul principal al formei.
@@ -23,29 +24,26 @@ namespace Rezervari
         public Form1()
         {
             InitializeComponent(); // Inițializează controalele generate de designer
-            rezervari = new List<Rezervare>(); // Inițializează lista de rezervări
 
-            // Opțional: Adaugă câteva rezervări inițiale pentru testare rapidă la pornirea aplicației.
-            rezervari.Add(new Rezervare("Popescu", "Ion", "0722111222", new DateTime(2025, 6, 15, 18, 0, 0), 4, "Masa la fereastra"));
-            rezervari.Add(new Rezervare("Ionescu", "Ana", "0744333444", new DateTime(2025, 6, 15, 20, 30, 0), 2));
-            rezervari.Add(new Rezervare("Georgescu", "Dan", "0766555666", new DateTime(2025, 6, 16, 19, 0, 0), 3, "Cu scaun de bebelus"));
-            rezervari.Add(new Rezervare("Vasile", "Maria", "0755888999", new DateTime(2025, 6, 15, 21, 0, 0), 5)); // A doua rezervare pe 15.06
+            // Instanțiem implementarea in-memory a repository-ului.
+            // În aplicații mai complexe, am folosi Inversion of Control/Dependency Injection aici.
+            _rezervareRepository = new InMemoryRezervareRepository();
 
             // Setează DataGridView-urile să genereze automat coloane bazat pe proprietățile clasei Rezervare.
             dataGridViewRezervari.AutoGenerateColumns = true;
             dataGridViewAnaliza.AutoGenerateColumns = true;
 
             // Inițializează DataPicker-ul de filtrare la data curentă.
-            dateTimePickerFiltruData.Value = DateTime.Today; // Setează la începutul zilei curente
+            dateTimePickerFiltruData.Value = DateTime.Today;
 
-            // Încarcă inițial rezervările în ambele DataGridView-uri la pornirea aplicației.
+            // Încarcă inițial rezervările folosind repository-ul.
             IncarcaRezervariInDataGridView();
         }
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Adaugă Rezervare".
         /// Colectează datele introduse de utilizator, efectuează validări simple
-        /// și adaugă o nouă rezervare la lista internă.
+        /// și adaugă o nouă rezervare la lista internă folosind repository-ul.
         /// </summary>
         private void btnAdaugaRezervare_Click(object sender, EventArgs e)
         {
@@ -57,7 +55,7 @@ namespace Rezervari
                     numUpDownNrPersoane.Value <= 0)
                 {
                     MessageBox.Show("Nume, prenume client și număr persoane sunt obligatorii!", "Eroare Validare", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return; // Oprește execuția dacă validarea eșuează
+                    return;
                 }
 
                 // Creează o nouă instanță de Rezervare cu datele introduse în controalele UI.
@@ -70,8 +68,8 @@ namespace Rezervari
                     txtObservatii.Text
                 );
 
-                // Adaugă noua rezervare la lista internă.
-                rezervari.Add(nouaRezervare);
+                // Adaugă noua rezervare folosind repository-ul.
+                _rezervareRepository.AddRezervare(nouaRezervare);
 
                 // Reîmprospătează conținutul ambelor DataGridView-uri pentru a reflecta modificarea.
                 IncarcaRezervariInDataGridView();
@@ -90,7 +88,7 @@ namespace Rezervari
 
         /// <summary>
         /// Gestionează evenimentul de click pentru butonul "Șterge Rezervare".
-        /// Șterge rezervarea selectată din DataGridView-ul principal.
+        /// Șterge rezervarea selectată din DataGridView-ul principal folosind repository-ul.
         /// </summary>
         private void btnStergeRezervare_Click(object sender, EventArgs e)
         {
@@ -102,15 +100,14 @@ namespace Rezervari
                 if (confirmResult == DialogResult.Yes)
                 {
                     // Obține obiectul Rezervare care este legat de rândul selectat în DataGridView.
-                    // DataBoundItem returnează obiectul sursă al rândului.
                     Rezervare rezervareDeSters = dataGridViewRezervari.SelectedRows[0].DataBoundItem as Rezervare;
 
                     if (rezervareDeSters != null)
                     {
-                        // Elimină rezervarea din lista internă.
-                        rezervari.Remove(rezervareDeSters);
+                        // Elimină rezervarea folosind repository-ul.
+                        _rezervareRepository.DeleteRezervare(rezervareDeSters);
 
-                        // Reîmprospătează ambele DataGridView-uri pentru a arăta că rezervarea a fost ștearsă.
+                        // Reîmprospătează ambele DataGridView-uri.
                         IncarcaRezervariInDataGridView();
 
                         MessageBox.Show("Rezervare ștearsă cu succes!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -125,21 +122,21 @@ namespace Rezervari
         }
 
         /// <summary>
-        /// Reîmprospătează datele afișate în ambele DataGridView-uri (Gestionare Rezervări și Panou de Analiză).
-        /// Această metodă este apelată după fiecare operație de adăugare sau ștergere.
-        /// Include logica de filtrare pentru Panoul de Analiză.
+        /// Reîmprospătează datele afișate în ambele DataGridView-uri.
+        /// Acum preia datele din repository.
         /// </summary>
         private void IncarcaRezervariInDataGridView()
         {
+            // Preluăm toate rezervările de la repository.
+            List<Rezervare> toateRezervarile = _rezervareRepository.GetAllRezervari();
+
             // Reîmprospătează DataGridView-ul pentru Gestionare Rezervări
             dataGridViewRezervari.DataSource = null;
-            dataGridViewRezervari.DataSource = rezervari.ToList();
+            dataGridViewRezervari.DataSource = toateRezervarile.ToList(); // Folosim ToList() pentru a asigura o copie legată la UI
 
             // Logica de filtrare pentru Panoul de Analiză
-            List<Rezervare> rezervariFiltrate = new List<Rezervare>(rezervari); // Creează o copie a listei complete
+            List<Rezervare> rezervariFiltrate = new List<Rezervare>(toateRezervarile); // Creează o copie a listei complete
 
-            // Verifică dacă checkbox-ul de filtrare este bifat (dacă vom adăuga unul)
-            // Momentan, filtram doar pe baza valorii din dateTimePickerFiltruData
             DateTime dataSelectata = dateTimePickerFiltruData.Value.Date; // Doar data, fără ora
 
             // Filtrează rezervările care se potrivesc cu data selectată
@@ -168,23 +165,20 @@ namespace Rezervari
         private void btnClearFiltru_Click(object sender, EventArgs e)
         {
             dateTimePickerFiltruData.Value = DateTime.Today; // Resetează la data curentă
-            IncarcaRezervariInDataGridView(); // Va reîncărca toate rezervările (sau cele de azi, dacă e implicit)
+            IncarcaRezervariInDataGridView(); // Va reîncărca rezervările pentru data curentă
         }
 
         /// <summary>
-        /// Curăță toate câmpurile de input de pe formularul de adăugare rezervări,
-        /// pregătindu-le pentru introducerea unei noi rezervări.
+        /// Curăță toate câmpurile de input de pe formularul de adăugare rezervări.
         /// </summary>
         private void GolesteCampuri()
         {
             txtNumeClient.Clear();
             txtPrenumeClient.Clear();
             txtNumarTelefon.Clear();
-            dateTimePickerDataOra.Value = DateTime.Now; // Resetează data/ora la cea curentă
-            numUpDownNrPersoane.Value = 1; // Resetează numărul de persoane la valoarea minimă (1)
+            dateTimePickerDataOra.Value = DateTime.Now;
+            numUpDownNrPersoane.Value = 1;
             txtObservatii.Clear();
         }
-
-
     }
 }
