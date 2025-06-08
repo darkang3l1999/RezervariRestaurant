@@ -1,0 +1,56 @@
+# .github/workflows/dotnet-ci.yml
+# Acest fișier definește workflow-ul de Continuous Integration (CI) pentru proiectul tău C# Windows Forms.
+# Se va rula automat la fiecare push sau pull request pe ramurile 'main' sau 'master'.
+name: .NET CI
+
+on:
+  push:
+    branches: [ "main", "master" ] # Declanșează workflow-ul la push pe aceste ramuri
+  pull_request:
+    branches: [ "main", "master" ] # Declanșează workflow-ul la pull request pe aceste ramuri
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest # Utilizează un agent de rulare Windows, necesar pentru Windows Forms (.NET Framework)
+
+    steps:
+    - uses: actions/checkout@v4 # Pasul 1: Verifică codul din repository
+      with:
+        fetch-depth: 0 # Necesare pentru shallow clones, poate fi util uneori, dar 0 ia tot istoricul
+
+    - name: Setup MSBuild & NuGet # Pasul 2: Configurează uneltele de build pentru .NET Framework
+      uses: microsoft/setup-msbuild@v2 # Folosește acțiunea oficială pentru MSBuild
+      with:
+        msbuild-version: latest # Va încerca să găsească cea mai recentă versiune de MSBuild disponibilă
+
+    - name: Setup NuGet # Pasul 3: Configurează NuGet (managerul de pachete)
+      uses: NuGet/setup-nuget@v1 # Folosește acțiunea oficială pentru NuGet
+
+    - name: Restore NuGet packages # Pasul 4: Restaurează dependențele NuGet ale soluției
+      run: nuget restore Rezervari.sln # Rulează 'nuget restore' pe fișierul soluției tale
+
+    - name: Build Solution # Pasul 5: Compilează soluția C# în modul Release
+      # Utilizează msbuild.exe pentru a compila proiectul .NET Framework
+      run: msbuild Rezervari.sln /p:Configuration=Release /p:Platform="Any CPU"
+
+    - name: Run Tests # Pasul 6: Rulează testele unitare
+      # ATENȚIE: Acest pas va eșua dacă nu ai încă un proiect de test.
+      # Va trebui să creezi un proiect de test separat (de ex., Rezervari.Tests)
+      # și să adaugi teste unitare în el înainte ca acest pas să treacă.
+      # Momentan, vom comenta acest pas pentru a permite build-ului să treacă și să vedem artefactul.
+      # Când vei implementa testele, vom decomenta și vom ajusta calea.
+      run: echo "Skipping tests for now. Will enable after unit tests are implemented."
+      # Dacă ai un proiect de test .NET Framework (xUnit, NUnit, MSTest),
+      # vei folosi ceva de genul (adaptează calea și numele proiectului de test):
+      # run: |
+      #   "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" Rezervari.Tests\bin\Release\Rezervari.Tests.dll /logger:trx
+      # Asigură-te că `Rezervari.Tests\bin\Release\Rezervari.Tests.dll` este calea corectă către fișierul DLL al testelor tale.
+
+
+    - name: Create Deployment Artifact # Pasul 7: Creează un artefact de deployment (fișier .zip)
+      uses: actions/upload-artifact@v4 # Acțiunea pentru a încărca artefacte
+      with:
+        name: RezervariApp # Numele artefactului care va fi creat (poate fi descărcat de pe GitHub)
+        path: Rezervari/bin/Release/ # Calea către fișierele compilate ale aplicației tale (executabilul și DLL-urile)
+        # IMPORTANT: Asigură-te că această cale este corectă și că fișierele există după pasul de build.
+        # Verifică directorul 'bin/Release' al proiectului tău 'Rezervari' după un build reușit local.
